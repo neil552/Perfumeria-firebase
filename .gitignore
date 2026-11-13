@@ -32,6 +32,23 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+node_modules/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+**/google-services.json
+**/GoogleService-Info.plist
+lib/firebase_options.dart
+*service-account*.json
+*firebase-adminsdk*.json
+*-credentials.json
+*.key
+*.pem
+*.p12
+*.p8
+*.mobileprovision
 
 # Symbolication related
 app.*.symbols
