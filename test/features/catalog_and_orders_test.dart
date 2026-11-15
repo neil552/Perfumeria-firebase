@@ -1,4 +1,4 @@
-// Comprueba reglas de clasificación, favoritos y ordenación del historial.
+// Comprueba reglas de clasificación, favoritos y serialización de pedidos.
 //
 // Los casos ejercitan repositorios en memoria, por lo que no requieren una
 // conexión a Firebase ni un dispositivo de prueba.
@@ -33,10 +33,8 @@ void main() {
     expect(FavoritesRepository.contains(productId), isFalse);
   });
 
-  // Restaura la lista original para aislar esta prueba del estado global.
-  test('new orders appear first in the order history', () {
-    final previousOrders = OrdersRepository.orders;
-    addTearDown(() => OrdersRepository.items.value = previousOrders);
+  // Comprueba que se conserva la información necesaria al reconstruir el pedido.
+  test('order data can be serialized and restored', () {
     const order = OrderModel(
       code: 'RE-TEST-001',
       date: '12 Nov 2026',
@@ -44,10 +42,36 @@ void main() {
       status: 'En preparación',
       image: '',
       active: true,
+      items: [
+        OrderItemModel(
+          productName: 'Set de prueba',
+          image: 'https://example.com/product.png',
+          quantity: 2,
+          unitPrice: 25,
+          wrapping: 'Caja premium',
+          dedication: 'Feliz día',
+        ),
+      ],
+      deliveryMode: 'Delivery',
+      deliveryDate: 'Vie. 13 Nov',
+      deliveryTime: '10:00 - 13:00',
+      customerName: 'Cliente de prueba',
+      phone: '999111222',
+      address: 'Calle de prueba 123',
+      reference: 'Puerta azul',
     );
 
-    OrdersRepository.add(order);
+    final restored = OrderModel.fromMap('firestore-order-id', order.toMap());
 
-    expect(OrdersRepository.orders.first, same(order));
+    expect(restored.id, 'firestore-order-id');
+    expect(restored.code, order.code);
+    expect(restored.total, order.total);
+    expect(restored.itemCount, 2);
+    expect(
+      restored.items.single.description,
+      'Caja premium · Dedicatoria incluida',
+    );
+    expect(restored.deliveryDate, order.deliveryDate);
+    expect(restored.address, order.address);
   });
 }

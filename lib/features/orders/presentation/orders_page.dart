@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/config/app_routes.dart';
@@ -6,6 +7,7 @@ import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_icon.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/bottom_nav.dart';
+import '../../auth/data/auth_error_message.dart';
 import '../data/orders_repository.dart';
 
 /// Pantalla del historial de pedidos.
@@ -21,6 +23,13 @@ class OrdersPage extends StatefulWidget {
 /// Escucha los cambios del historial y actualiza la lista de pedidos.
 class _OrdersPageState extends State<OrdersPage> {
   String _tab = 'En curso';
+  late final Stream<List<OrderModel>> _ordersStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _ordersStream = OrdersRepository.watchForCurrentUser();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +62,24 @@ class _OrdersPageState extends State<OrdersPage> {
                 style: AppTheme.playfair(size: 27, weight: FontWeight.w600),
               ),
               const SizedBox(height: 20),
-              ValueListenableBuilder<List<OrderModel>>(
-                valueListenable: OrdersRepository.items,
-                builder: (context, orders, _) {
+              StreamBuilder<List<OrderModel>>(
+                stream: _ordersStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    final error = snapshot.error;
+                    final message = error is FirebaseException
+                        ? authErrorMessage(error)
+                        : 'No se pudo cargar tu historial de pedidos.';
+                    return _buildStatusMessage(message);
+                  }
+                  if (!snapshot.hasData) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final orders = snapshot.data!;
                   final activeCount = orders
                       .where((order) => order.active)
                       .length;
@@ -90,6 +114,17 @@ class _OrdersPageState extends State<OrdersPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 18),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: AppTheme.poppins(size: 11, color: AppTheme.muted),
       ),
     );
   }

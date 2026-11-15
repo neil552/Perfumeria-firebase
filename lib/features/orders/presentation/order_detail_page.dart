@@ -369,16 +369,16 @@ class OrderDetailPage extends StatelessWidget {
           const SizedBox(height: 13),
           _addressRow(
             'pin',
-            order.address.isEmpty ? 'Av. Los Rosales 245' : order.address,
-            order.reference.isEmpty
-                ? 'Miraflores · Frente al parque'
-                : order.reference,
+            order.address.isEmpty ? 'Sin dirección de entrega' : order.address,
+            order.reference.isEmpty ? 'Sin referencia' : order.reference,
           ),
           const SizedBox(height: 12),
           _addressRow(
             'phone',
-            order.customerName.isEmpty ? 'Valeria Mendoza' : order.customerName,
-            order.phone.isEmpty ? '+51 987 654 321' : order.phone,
+            order.customerName.isEmpty
+                ? 'Sin nombre registrado'
+                : order.customerName,
+            order.phone.isEmpty ? 'Sin celular registrado' : order.phone,
           ),
         ],
       ),

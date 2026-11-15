@@ -24,6 +24,8 @@ class ProfilePage extends StatefulWidget {
 
 /// Construye el resumen del usuario y coordina las acciones del menú.
 class _ProfilePageState extends State<ProfilePage> {
+  late final Stream<List<OrderModel>> _ordersStream;
+
   // El texto del segundo campo identifica la acción en _handleMenuTap.
   // Cada fila conserva el icono, título y descripción que presenta la interfaz.
   static const List<List<String>> _menu = [
@@ -34,6 +36,12 @@ class _ProfilePageState extends State<ProfilePage> {
     ['phone', 'Contacto', 'Estamos para ayudarte'],
     ['sparkle', 'Preguntas frecuentes', 'Resuelve tus dudas'],
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ordersStream = OrdersRepository.watchForCurrentUser();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,53 +172,91 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Resume pedidos y favoritos del estado en memoria de esta sesión.
+  /// Resume los pedidos de Firestore y los favoritos de esta sesión.
   ///
   /// El cupón es un dato demostrativo fijo y no representa una cuenta real
   /// sincronizada con el backend.
   Widget _buildStats() {
-    final stats = [
-      [OrdersRepository.orders.length.toString(), 'Pedidos'],
-      [FavoritesRepository.productIds.value.length.toString(), 'Favoritos'],
-      ['1', 'Cupón'],
-    ];
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < stats.length; i++)
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: i < stats.length - 1
-                      ? const Border(right: BorderSide(color: AppTheme.line))
-                      : null,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  children: [
-                    Text(
-                      stats[i][0],
-                      style: AppTheme.playfair(
-                        size: 18,
-                        weight: FontWeight.w600,
-                        color: AppTheme.wine,
-                      ),
-                    ),
-                    Text(
-                      stats[i][1],
-                      style: AppTheme.poppins(size: 7, color: AppTheme.muted),
-                    ),
-                  ],
+    return StreamBuilder<List<OrderModel>>(
+      stream: _ordersStream,
+      builder: (context, snapshot) {
+        final count = snapshot.hasData
+            ? snapshot.data!.length.toString()
+            : snapshot.hasError
+            ? '!'
+            : '…';
+        final stats = [
+          [count, 'Pedidos'],
+          [FavoritesRepository.productIds.value.length.toString(), 'Favoritos'],
+          ['1', 'Cupón'],
+        ];
+        final error = snapshot.error;
+        final errorMessage = error == null
+            ? null
+            : error is FirebaseException
+            ? authErrorMessage(error)
+            : 'No se pudo cargar el número de pedidos.';
+
+        return Column(
+          children: [
+            if (errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.poppins(
+                    size: 8,
+                    color: const Color(0xFFB13B50),
+                  ),
                 ),
               ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  for (var i = 0; i < stats.length; i++)
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: i < stats.length - 1
+                              ? const Border(
+                                  right: BorderSide(color: AppTheme.line),
+                                )
+                              : null,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          children: [
+                            Text(
+                              stats[i][0],
+                              style: AppTheme.playfair(
+                                size: 18,
+                                weight: FontWeight.w600,
+                                color: AppTheme.wine,
+                              ),
+                            ),
+                            Text(
+                              stats[i][1],
+                              style: AppTheme.poppins(
+                                size: 7,
+                                color: AppTheme.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 

@@ -5,6 +5,74 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, create, update: if request.auth != null
         && request.auth.uid == userId;
+
+      // Los pedidos son privados y se guardan bajo el UID de su propietario.
+      match /orders/{orderId} {
+        function ownsOrder() {
+          return request.auth != null
+            && request.auth.uid == userId;
+        }
+
+        allow read: if ownsOrder();
+        allow create: if ownsOrder()
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'code',
+            'date',
+            'createdAt',
+            'total',
+            'status',
+            'active',
+            'image',
+            'items',
+            'deliveryMode',
+            'deliveryDate',
+            'deliveryTime',
+            'customerName',
+            'phone',
+            'address',
+            'reference'
+          ])
+          && request.resource.data.keys().hasAll([
+            'userId',
+            'code',
+            'date',
+            'createdAt',
+            'total',
+            'status',
+            'active',
+            'image',
+            'items',
+            'deliveryMode',
+            'deliveryDate',
+            'deliveryTime',
+            'customerName',
+            'phone',
+            'address',
+            'reference'
+          ])
+          && request.resource.data.userId == userId
+          && request.resource.data.code is string
+          && request.resource.data.date is string
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.total is number
+          && request.resource.data.total >= 0
+          && request.resource.data.status == 'En preparación'
+          && request.resource.data.active == true
+          && request.resource.data.image is string
+          && request.resource.data.items is list
+          && request.resource.data.items.size() > 0
+          && request.resource.data.deliveryMode is string
+          && request.resource.data.deliveryDate is string
+          && request.resource.data.deliveryTime is string
+          && request.resource.data.customerName is string
+          && request.resource.data.phone is string
+          && request.resource.data.address is string
+          && request.resource.data.reference is string;
+
+        // El cliente no puede alterar ni borrar un pedido una vez creado.
+        allow update, delete: if false;
+      }
     }
   }
 }

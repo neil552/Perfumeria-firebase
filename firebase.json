@@ -1,1 +1,24 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"perfumeria-486f9","appId":"1:998876616474:android:959a8f947e51e498923ea3","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"perfumeria-486f9","configurations":{"android":"1:998876616474:android:959a8f947e51e498923ea3"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "perfumeria-486f9",
+          "appId": "1:998876616474:android:959a8f947e51e498923ea3",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "perfumeria-486f9",
+          "configurations": {
+            "android": "1:998876616474:android:959a8f947e51e498923ea3"
+          }
+        }
+      }
+    }
+  }
+}

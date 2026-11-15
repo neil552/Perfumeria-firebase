@@ -21,6 +21,8 @@ String authErrorMessage(FirebaseException error) {
         return 'No se pudo conectar. Revisa tu conexión a internet.';
       case 'too-many-requests':
         return 'Hubo demasiados intentos. Espera un momento y vuelve a probar.';
+      case 'unauthenticated':
+        return 'Inicia sesión para guardar y consultar tus pedidos.';
     }
   }
 

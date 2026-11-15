@@ -101,14 +101,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  /// Valida los datos, crea un pedido demostrativo y vacía el carrito.
+  /// Valida la entrega, guarda el pedido del usuario y luego vacía el carrito.
   ///
-  /// El pedido se conserva en memoria para el historial de esta ejecución; el
-  /// flujo no procesa pagos ni persiste pedidos en Firestore.
+  /// La compra requiere una cuenta autenticada para asociarla a un UID. El
+  /// registro del pedido no procesa pagos reales.
   Future<void> _confirmOrder() async {
     final cart = CartRepository.instance;
     if (cart.isEmpty) {
       _showError('Agrega al menos un producto antes de confirmar.');
+      return;
+    }
+    if (AuthRepository.currentUser == null) {
+      await _showLoginRequired();
       return;
     }
     if (_customerNameController.text.trim().isEmpty ||
@@ -160,13 +164,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
         reference: _referenceController.text.trim(),
       );
 
-      OrdersRepository.add(order);
+      final savedOrder = await OrdersRepository.createForCurrentUser(order);
       cart.clear();
       if (!mounted) return;
-      Navigator.pushNamed(context, AppRoutes.success, arguments: order);
+      Navigator.pushNamed(context, AppRoutes.success, arguments: savedOrder);
+    } on FirebaseException catch (error) {
+      if (mounted) _showError(authErrorMessage(error));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  /// Ofrece iniciar sesión, requisito para guardar el pedido en una cuenta.
+  Future<void> _showLoginRequired() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Inicia sesión para continuar'),
+        content: const Text(
+          'Necesitas una cuenta para guardar y consultar tus pedidos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Ahora no'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+            child: const Text('Iniciar sesión'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatDate(DateTime date) =>
